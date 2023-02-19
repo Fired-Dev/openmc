@@ -1,0 +1,45 @@
+from ctypes import *
+
+
+SetWindowsHookEx=windll.user32.SetWindowsHookExA
+UnhookWindowsHookEx=windll.user32.UnhookWindowsHookEx
+CallNextHookEx=windll.user32.CallNextHookEx
+GetMessage=windll.user32.GetMessageA
+GetLastError=windll.kernel32.GetLastError
+GetModuleHandle=windll.kernel32.GetModuleHandleW
+# MagicNumber from pywin32con.py
+WM_LBUTTONDOWN=513
+WM_LBUTTONUP=514
+WM_MOUSEMOVE=512
+WM_RBUTTONDOWN=516
+WM_RBUTTONUP=517
+WH_MOUSE_LL=14
+HC_ACTION=0
+WH_KEYBOARD_LL=13
+
+
+class KBDLLHOOKSTRUCT(Structure):
+    _fields_ = [
+        ('vkCode',c_int),
+        ('scanCode', c_int),
+        ('flags', c_int),
+        ('time', c_int),
+        ('dwExtraInfo', c_uint),
+        ('',c_void_p)
+    ]
+
+
+class POINT(Structure):
+    _fields_ = [
+        ('x',c_long),
+        ('y',c_long)
+    ]
+
+
+class MSLLHOOKSTRUCT(Structure):
+    _fields_ = [
+        ('pt',POINT),
+        ('hwnd',c_int),
+        ('wHitTestCode',c_uint),
+        ('dwExtraInfo',c_uint),
+    ]

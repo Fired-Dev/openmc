@@ -1,0 +1,95 @@
+# 基于底层windowsapi实现监听键盘
+from ctypes import windll,wintypes
+from collections import defaultdict
+
+import api.util.log
+from api.util.keyboard._win32base import *
+
+    
+keyboard_hd = None
+mouse_hd = None
+mouse_lisener=defaultdict(list)
+keyboard_lisener=[]
+
+def add_mouse_lisener(mode,func):
+    mouse_lisener.append(func)
+def add_keyboard_lisener(func):
+    keyboard_lisener.append(func)
+
+
+def wait_for_msg():
+    msg = wintypes.MSG()
+    GetMessage(msg, 0, 0, 0)
+
+def keyboard_pro(nCode, wParam, lParam):
+    """
+    函数功能：键盘钩子函数，当有按键按下时此函数被回调
+    """
+    if nCode == HC_ACTION:
+        KBDLLHOOKSTRUCT_p = POINTER(KBDLLHOOKSTRUCT)
+        param=cast(lParam,KBDLLHOOKSTRUCT_p)
+        print(param.contents.vkCode)
+    return CallNextHookEx(keyboard_hd, nCode, wParam, lParam)
+
+
+def init_keyboard():
+    """
+    函数功能：启动键盘监听
+    """
+    HOOKPROTYPE = CFUNCTYPE(c_int, c_int, c_int, POINTER(c_void_p))
+    pointer = HOOKPROTYPE(keyboard_pro)
+    """keyboard_hd = SetWindowsHookEx(
+        WH_KEYBOARD_LL,
+        pointer,
+        GetModuleHandle(None),
+        0)"""
+    keyboard_hd = SetWindowsHookEx(
+        WH_KEYBOARD_LL,
+        GetModuleHandle(None),
+        None,
+        0)
+    print(GetLastError())
+    print(keyboard_hd)
+    wait_for_msg()
+
+
+def mouse_pro(nCode, wParam, lParam):
+    """
+    函数功能：鼠标钩子函数，当有鼠标事件，此函数被回调
+    """
+    if nCode == HC_ACTION:
+        MSLLHOOKSTRUCT_p = POINTER(MSLLHOOKSTRUCT)
+        param=cast(lParam,MSLLHOOKSTRUCT_p)
+        if wParam == WM_LBUTTONDOWN:
+            print("左键点击，坐标：x:%d,y:%d" % (param.contents.pt.x,param.contents.pt.y))
+        elif wParam == WM_LBUTTONUP:
+            print("左键抬起，坐标：x:%d,y:%d" % (param.contents.pt.x, param.contents.pt.y))
+        elif wParam == WM_MOUSEMOVE:
+            print("鼠标移动，坐标：x:%d,y:%d" % (param.contents.pt.x, param.contents.pt.y))
+        elif wParam == WM_RBUTTONDOWN:
+            print("右键点击，坐标：x:%d,y:%d" % (param.contents.pt.x, param.contents.pt.y))
+        elif wParam == WM_RBUTTONUP:
+            print("右键抬起，坐标：x:%d,y:%d" % (param.contents.pt.x, param.contents.pt.y))
+    return CallNextHookEx(mouse_hd, nCode, wParam, lParam)
+
+
+def init_mouse():
+    """
+    函数功能：启动鼠标监听
+    """
+    HOOKPROTYPE = CFUNCTYPE(c_int, c_int, c_int, POINTER(c_void_p))
+    pointer = HOOKPROTYPE(mouse_pro)
+    mouse_hd = SetWindowsHookEx(
+        WH_MOUSE_LL,
+        pointer,
+        GetModuleHandle(None),
+        0)
+    wait_for_msg()
+
+def init():
+    init_mouse()
+    init_keyboard()
+
+def stop():
+    UnhookWindowsHookEx(keyboard_hd)
+    UnhookWindowsHookEx(mouse_hd)
